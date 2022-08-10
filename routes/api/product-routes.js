@@ -1,22 +1,68 @@
-const router = require('express').Router();
-const { Product, Category, Tag, ProductTag } = require('../../models');
+const router = require("express").Router();
+const { Product, Category, Tag, ProductTag } = require("../../models");
 
 // The `/api/products` endpoint
 
 // get all products
-router.get('/', (req, res) => {
+router.get("/", async (req, res) => {
   // find all products
   // be sure to include its associated Category and Tag data
+  try {
+    // return all categories by quering the db with sequelize
+    const productData = await Product.findAll({
+      attributes: ["id", "product_name", "price", "stock"],
+      include: [
+        {
+          model: Category,
+          attributes: ["category_name"],
+        },
+        {
+          model: Tag,
+          attributes: ["tag_name"],
+        },
+      ],
+    });
+    if (!productData) {
+      res.status(404).json({ message: "Product does not exist" });
+    }
+    res.status(200).json(productData);
+  } catch (error) {
+    res.status(500).json(error);
+  }
 });
 
 // get one product
-router.get('/:id', (req, res) => {
-  // find a single product by its `id`
-  // be sure to include its associated Category and Tag data
+router.get("/:id", async (req, res) => {
+  try {
+    // find a single product by its `id`
+    // be sure to include its associated Category and Tag data
+    const oneProduct = await Product.findOne({
+      where: {
+        id: req.params.id,
+      },
+      attributes: ["id", "product_name", "price", "stock"],
+      include: [
+        {
+          model: Category,
+          attributes: ["category_name"],
+        },
+        {
+          model: Tag,
+          attributes: ["tag_name"],
+        },
+      ],
+    });
+    if (!oneProduct) {
+      res.status(404).json({ message: "Product does not exist" });
+    }
+    res.status(200).json(oneProduct);
+  } catch (error) {
+    res.status(500).json(error);
+  }
 });
 
 // create new product
-router.post('/', (req, res) => {
+router.post("/", (req, res) => {
   /* req.body should look like this...
     {
       product_name: "Basketball",
@@ -48,7 +94,7 @@ router.post('/', (req, res) => {
 });
 
 // update product
-router.put('/:id', (req, res) => {
+router.put("/:id", (req, res) => {
   // update product data
   Product.update(req.body, {
     where: {
@@ -89,8 +135,21 @@ router.put('/:id', (req, res) => {
     });
 });
 
-router.delete('/:id', (req, res) => {
+router.delete("/:id", async (req, res) => {
   // delete one product by its `id` value
+  try {
+    const deleteProduct = await Product.destroy({
+      where: {
+        id: req.params.id,
+      },
+    });
+    if (!deleteProduct) {
+      res.status(404).json({ message: "Failed to delete product" });
+    }
+    res.status(200).json(deleteProduct);
+  } catch (error) {
+    res.status(500).json(error);
+  }
 });
 
 module.exports = router;
